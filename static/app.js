@@ -28,6 +28,7 @@ const reviewBtn = document.getElementById("reviewBtn");
 const reviewSection = document.getElementById("reviewSection");
 const scanSection = document.getElementById("scanSection");
 const headerStats = document.getElementById("headerStats");
+const verificationStatus = document.getElementById("verificationStatus");
 const reviewCounterWrap = document.getElementById("reviewCounterWrap");
 const reviewCounter = document.getElementById("reviewCounter");
 const reviewJumpInput = document.getElementById("reviewJumpInput");
@@ -359,6 +360,12 @@ function handleProgress(data) {
         progressBar.style.width = `${pct}%`;
         currentZip.textContent = data.current ? truncateFilename(data.current) : "Verifying...";
         zipProgress.textContent = `${verified} / ${total} (${pct}%)`;
+        animateNumber(resultExact, data.exact || 0, 180);
+        const exactStat = headerStats?.querySelectorAll(".header-stat")[3];
+        if (exactStat) exactStat.innerHTML = `<div class="dot dot-exact"></div>Exact: ${numberWithCommas(data.exact || 0)}`;
+        if (verificationStatus) {
+            verificationStatus.textContent = `Checking exact matches in the background: ${verified.toLocaleString()} of ${total.toLocaleString()} complete.`;
+        }
 
     } else if (stage === "done") {
 
@@ -372,7 +379,7 @@ function handleProgress(data) {
         progressBar.classList.remove("indeterminate");
         progressBar.style.width = "100%";
 
-        scanBtn.disabled = false;
+        scanBtn.disabled = Boolean(data.verification_pending);
 
         // Show results
         const statsA = data.stats_a;
@@ -401,6 +408,20 @@ function handleProgress(data) {
             <div class="header-stat"><div class="dot dot-exact"></div>Exact: ${numberWithCommas(data.exact || 0)}</div>
         `;
 
+        if (!data.verification_pending && eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+
+    } else if (stage === "verification_complete") {
+
+        animateNumber(resultExact, data.exact || 0, 180);
+        const exactStat = headerStats?.querySelectorAll(".header-stat")[3];
+        if (exactStat) exactStat.innerHTML = `<div class="dot dot-exact"></div>Exact: ${numberWithCommas(data.exact || 0)}`;
+        if (verificationStatus) verificationStatus.textContent = data.total
+            ? "Exact checks are complete."
+            : "No candidate pairs need exact checks.";
+        scanBtn.disabled = false;
         if (eventSource) {
             eventSource.close();
             eventSource = null;
@@ -1235,16 +1256,19 @@ function updatePairVerificationUI(pair) {
 }
 
 function verifyPairOnOpen(pair) {
-    if (pair.exact_status !== "pending" || verifyingPairs.has(pair.originalIndex)) return;
+    if (pair.exact_status !== "checking" || verifyingPairs.has(pair.originalIndex)) return;
 
     const index = pair.originalIndex;
     verifyingPairs.add(index);
-    pair.exact_status = "checking";
     updatePairVerificationUI(pair);
 
-    fetch(`/verify/${index}`, { method: "POST" })
+    const poll = () => fetch(`/verify/${index}`, { method: "POST" })
         .then(response => response.json())
         .then(data => {
+            if (data.status === "pending") {
+                setTimeout(poll, 300);
+                return;
+            }
             if (data.status !== "ok") throw new Error(data.message || "Verification failed");
             Object.assign(pair, data.item);
             pair.originalIndex = index;
@@ -1262,13 +1286,14 @@ function verifyPairOnOpen(pair) {
             }
         })
         .catch(error => {
-            pair.exact_status = "pending";
             console.error(error);
-            if (visibleDuplicates[currentIndex]?.originalIndex === index) {
-                updatePairVerificationUI(pair);
-            }
+            verifyingPairs.delete(index);
         })
-        .finally(() => verifyingPairs.delete(index));
+        .finally(() => {
+            if (pair.exact_status !== "checking") verifyingPairs.delete(index);
+        });
+
+    poll();
 }
 
 function showDuplicate(index) {

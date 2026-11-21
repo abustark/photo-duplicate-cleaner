@@ -1,3 +1,4 @@
+import copy
 import io
 import json
 import mimetypes
@@ -30,6 +31,8 @@ SESSION_FILE = ROOT / "active_session.json"
 
 scan_state = {
     "running": False,
+    "verification_running": False,
+    "verification_progress": {"verified": 0, "total": 0},
     "stage": "idle",
     "progress": {},
     "candidates": [],
@@ -39,7 +42,6 @@ scan_state = {
 }
 
 progress_queue = Queue()
-verification_lock = threading.Lock()
 
 
 # ─── Pages ──────────────────────────────────────────────────
@@ -74,7 +76,7 @@ def progress():
         while True:
             msg = progress_queue.get()
             yield f"data: {json.dumps(msg)}\n\n"
-            if msg.get("stage") == "done" or msg.get("stage") == "error":
+            if msg.get("stage") in ("verification_complete", "error"):
                 break
 
     return Response(
@@ -182,16 +184,15 @@ def run_scan():
 
         for candidate in candidates:
             candidate["sha_verified"] = False
-            candidate["exact_status"] = "pending"
+            candidate["exact_status"] = "checking"
         scan_state["candidates"] = candidates
 
         strong = sum(1 for c in candidates if c["match_type"] == "strong")
         likely = sum(1 for c in candidates if c["match_type"] == "likely")
         weak = sum(1 for c in candidates if c["match_type"] == "weak")
-        exact = 0
-
-        # ── Done (no SHA filter — user sees all candidates) ─
-
+        exact = sum(1 for c in candidates if c.get("sha_verified"))
+        scan_state["verification_running"] = bool(candidates)
+        scan_state["verification_progress"] = {"verified": 0, "total": len(candidates)}
         emit({
             "stage": "done",
             "total_candidates": len(candidates),
@@ -199,9 +200,19 @@ def run_scan():
             "likely": likely,
             "weak": weak,
             "exact": exact,
+            "verification_pending": bool(candidates),
             "stats_a": scan_state["stats_a"],
             "stats_b": scan_state["stats_b"]
         })
+
+        if candidates:
+            threading.Thread(
+                target=verify_all_candidates,
+                args=(candidates,),
+                daemon=True,
+            ).start()
+        else:
+            emit({"stage": "verification_complete", "verified": 0, "total": 0, "exact": 0})
 
     except Exception as e:
 
@@ -212,11 +223,54 @@ def run_scan():
         scan_state["running"] = False
 
 
+def verify_all_candidates(candidates):
+    """Verify every candidate in the background while review remains available."""
+    working_candidates = copy.deepcopy(candidates)
+
+    def apply_candidate(index, candidate):
+        scan_state["candidates"][index] = candidate
+
+    def progress_verify(info):
+        scan_state["verification_progress"] = {
+            "verified": info["verified"],
+            "total": info["total"],
+        }
+        emit({
+            "stage": "verifying",
+            "verified": info["verified"],
+            "total": info["total"],
+            "current": info["current"],
+            "exact": sum(1 for item in scan_state["candidates"] if item.get("sha_verified")),
+        })
+
+    try:
+        annotate_candidates(
+            working_candidates,
+            ROOT,
+            progress_callback=progress_verify,
+            candidate_callback=apply_candidate,
+        )
+    finally:
+        for index, candidate in enumerate(scan_state["candidates"]):
+            if candidate.get("exact_status") == "checking":
+                failed_candidate = dict(candidate)
+                failed_candidate["exact_status"] = "error"
+                scan_state["candidates"][index] = failed_candidate
+        scan_state["verification_running"] = False
+        progress = scan_state["verification_progress"]
+        emit({
+            "stage": "verification_complete",
+            "verified": progress["total"],
+            "total": progress["total"],
+            "exact": sum(1 for item in scan_state["candidates"] if item.get("sha_verified")),
+        })
+
+
 @app.route("/scan")
 def scan():
     """Start scan in background thread."""
 
-    if scan_state["running"]:
+    if scan_state["running"] or scan_state["verification_running"]:
         return jsonify({"status": "already_running"})
 
     # Clear queue
@@ -278,15 +332,15 @@ def duplicates():
 
 @app.route("/verify/<int:index>", methods=["POST"])
 def verify_duplicate(index):
-    """Verify a candidate when the user opens it for review."""
+    """Return the latest background verification state for one candidate."""
     if index < 0 or index >= len(scan_state["candidates"]):
         return jsonify({"status": "error", "message": "Candidate not found"}), 404
 
-    with verification_lock:
-        candidate = scan_state["candidates"][index]
-        if candidate.get("exact_status") == "pending":
-            annotate_candidates([candidate], ROOT)
-        return jsonify({"status": "ok", "item": candidate})
+    candidate = scan_state["candidates"][index]
+    return jsonify({
+        "status": "pending" if candidate.get("exact_status") == "checking" else "ok",
+        "item": candidate,
+    })
 
 
 @app.route("/media/<account>/<zip_name>/<path:file_path>")

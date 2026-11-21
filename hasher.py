@@ -231,7 +231,7 @@ def _verify_single_pair(pair, root, keep_all=True):
         return pair if keep_all else None
 
 
-def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
+def verify_candidates(candidates, root, progress_callback=None, keep_all=False, candidate_callback=None):
     """
     Verify candidate duplicates concurrently across multiple threads.
     Preserves exact original candidate ordering while delivering 10x-50x speedups.
@@ -257,6 +257,8 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
             results[idx] = _cached_result(pair, cached)
             current_cache[key] = cached
             completed_count += 1
+            if candidate_callback:
+                candidate_callback(idx, results[idx])
         else:
             pending.append((idx, pair, key))
 
@@ -278,6 +280,8 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
                 res["exact_status"] = "error"
 
             results[idx] = res
+            if candidate_callback and res is not None:
+                candidate_callback(idx, res)
 
             if key and res and res.get("exact_status") not in ("error", "missing_zip"):
                 current_cache[key] = _cache_result(res)
@@ -312,12 +316,13 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
     return [r for r in results if r is not None and r.get("sha_verified")]
 
 
-def annotate_candidates(candidates, root, progress_callback=None):
+def annotate_candidates(candidates, root, progress_callback=None, candidate_callback=None):
     """Verify candidates in place while keeping likely/weak matches for review."""
     return verify_candidates(
         candidates,
         root,
         progress_callback=progress_callback,
-        keep_all=True
+        keep_all=True,
+        candidate_callback=candidate_callback,
     )
 
