@@ -1,0 +1,31 @@
+# Local Google Takeout exports and extracted copies (never publish user media)
+/accountA/
+/accountB/
+/takeout/
+/to_delete/
+/reports/
+/temp/
+/v1_backup/
+
+# Local review state and scan caches
+/active_session.json
+/history.json
+/*cache*.json
+
+# Python/runtime artifacts
+__pycache__/
+*.py[cod]
+*.log
+.venv/
+venv/
+env/
+
+# Local secrets and machine-specific agent/editor configuration
+.env
+.env.*
+!.env.example
+.agents/
+.codex/
+opencode.json
+.DS_Store
+Thumbs.db
