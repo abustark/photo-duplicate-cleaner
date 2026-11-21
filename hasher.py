@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import threading
 import time
@@ -8,6 +9,85 @@ from pathlib import Path
 from scanner import get_dimensions
 
 _thread_local = threading.local()
+_VERIFY_CACHE_NAME = "verified_candidates.json"
+
+
+def _load_verify_cache(root):
+    cache_path = root / "temp" / _VERIFY_CACHE_NAME
+    try:
+        data = json.loads(cache_path.read_text("utf-8"))
+        if data.get("version") == 1 and isinstance(data.get("pairs"), dict):
+            return data["pairs"]
+    except (OSError, ValueError, AttributeError):
+        pass
+    return {}
+
+
+def _pair_cache_key(pair, root, zip_stats):
+    """Key a result to both ZIP versions and the two member paths."""
+    parts = []
+    for account, item in (("accountA", pair["accountA"]), ("accountB", pair["accountB"])):
+        zip_path = root / account / item["zip"]
+        try:
+            stat = zip_stats.get(zip_path)
+            if stat is None:
+                stat = zip_path.stat()
+                zip_stats[zip_path] = stat
+        except OSError:
+            return None
+        parts.append((item["zip"], stat.st_size, stat.st_mtime_ns, item["path"]))
+    return json.dumps(parts, separators=(",", ":"))
+
+
+def _cached_result(pair, cached):
+    """Apply cached verification fields to a fresh candidate pair."""
+    pair["sha_verified"] = cached.get("sha_verified", False)
+    pair["exact_status"] = cached.get("exact_status", "error")
+    if cached.get("sha"):
+        pair["sha"] = cached["sha"]
+    for account in ("accountA", "accountB"):
+        dimensions = cached.get(account, {})
+        for field in ("width", "height"):
+            if field in dimensions:
+                pair[account][field] = dimensions[field]
+    return pair
+
+
+def _cache_result(pair):
+    """Keep only the result fields needed to reuse an exact check."""
+    result = {
+        "sha_verified": pair.get("sha_verified", False),
+        "exact_status": pair.get("exact_status", "error"),
+    }
+    if pair.get("sha"):
+        result["sha"] = pair["sha"]
+    for account in ("accountA", "accountB"):
+        dimensions = {
+            field: pair[account][field]
+            for field in ("width", "height")
+            if field in pair[account]
+        }
+        if dimensions:
+            result[account] = dimensions
+    return result
+
+
+def _save_verify_cache(root, pairs):
+    cache_dir = root / "temp"
+    cache_dir.mkdir(exist_ok=True)
+    cache_path = cache_dir / _VERIFY_CACHE_NAME
+    temp_path = cache_path.with_suffix(".tmp")
+    try:
+        temp_path.write_text(
+            json.dumps({"version": 1, "pairs": pairs}, separators=(",", ":")),
+            "utf-8",
+        )
+        temp_path.replace(cache_path)
+    except OSError:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _get_thread_zip_handle(zip_path):
@@ -163,18 +243,33 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
 
     workers = min(8, os.cpu_count() or 4)
     results = [None] * total
+    cached_pairs = _load_verify_cache(root)
+    current_cache = {}
+    zip_stats = {}
+    pending = []
     completed_count = 0
+
+    for idx, pair in enumerate(candidates):
+        key = _pair_cache_key(pair, root, zip_stats)
+        cached = cached_pairs.get(key) if key else None
+        if cached and cached.get("exact_status") not in ("error", "missing_zip"):
+            results[idx] = _cached_result(pair, cached)
+            current_cache[key] = cached
+            completed_count += 1
+        else:
+            pending.append((idx, pair, key))
+
     lock = threading.Lock()
     last_emit_time = 0.0
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    with ThreadPoolExecutor(max_workers=min(workers, len(pending)) or 1) as executor:
         future_to_idx = {
-            executor.submit(_verify_single_pair, pair, root, keep_all): i
-            for i, pair in enumerate(candidates)
+            executor.submit(_verify_single_pair, pair, root, keep_all): (i, key)
+            for i, pair, key in pending
         }
 
         for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
+            idx, key = future_to_idx[future]
             try:
                 res = future.result()
             except Exception:
@@ -182,6 +277,9 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
                 res["exact_status"] = "error"
 
             results[idx] = res
+
+            if key and res and res.get("exact_status") not in ("error", "missing_zip"):
+                current_cache[key] = _cache_result(res)
 
             with lock:
                 completed_count += 1
@@ -195,6 +293,8 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
                         "total": total,
                         "current": current_name
                     })
+
+    _save_verify_cache(root, current_cache)
 
         # Cleanup handles in all worker threads
         list(executor.map(lambda _: _close_thread_handles(), range(workers)))
