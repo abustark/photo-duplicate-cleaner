@@ -73,6 +73,7 @@ def _cache_result(pair):
 
 
 def _save_verify_cache(root, pairs):
+    pairs = {**_load_verify_cache(root), **pairs}
     cache_dir = root / "temp"
     cache_dir.mkdir(exist_ok=True)
     cache_path = cache_dir / _VERIFY_CACHE_NAME

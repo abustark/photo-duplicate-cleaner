@@ -39,6 +39,7 @@ scan_state = {
 }
 
 progress_queue = Queue()
+verification_lock = threading.Lock()
 
 
 # ─── Pages ──────────────────────────────────────────────────
@@ -179,27 +180,15 @@ def run_scan():
 
         candidates = find_possible_duplicates(result_a, result_b)
 
-        emit({"stage": "verifying", "verified": 0, "total": len(candidates)})
-
-        def progress_verify(info):
-            emit({
-                "stage": "verifying",
-                "verified": info["verified"],
-                "total": info["total"],
-                "current": info["current"]
-            })
-
-        candidates = annotate_candidates(
-            candidates,
-            ROOT,
-            progress_callback=progress_verify
-        )
+        for candidate in candidates:
+            candidate["sha_verified"] = False
+            candidate["exact_status"] = "pending"
         scan_state["candidates"] = candidates
 
         strong = sum(1 for c in candidates if c["match_type"] == "strong")
         likely = sum(1 for c in candidates if c["match_type"] == "likely")
         weak = sum(1 for c in candidates if c["match_type"] == "weak")
-        exact = sum(1 for c in candidates if c.get("sha_verified"))
+        exact = 0
 
         # ── Done (no SHA filter — user sees all candidates) ─
 
@@ -286,6 +275,19 @@ def duplicates():
 
 
 # ─── Image / Video Streaming ──────────────────────────────
+
+@app.route("/verify/<int:index>", methods=["POST"])
+def verify_duplicate(index):
+    """Verify a candidate when the user opens it for review."""
+    if index < 0 or index >= len(scan_state["candidates"]):
+        return jsonify({"status": "error", "message": "Candidate not found"}), 404
+
+    with verification_lock:
+        candidate = scan_state["candidates"][index]
+        if candidate.get("exact_status") == "pending":
+            annotate_candidates([candidate], ROOT)
+        return jsonify({"status": "ok", "item": candidate})
+
 
 @app.route("/media/<account>/<zip_name>/<path:file_path>")
 def serve_media(account, zip_name, file_path):

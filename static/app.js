@@ -1199,6 +1199,78 @@ reviewJumpInput.addEventListener("keydown", (e) => {
 
 // ─── Show Duplicate ────────────────────────────────────────
 
+const verifyingPairs = new Set();
+
+function updatePairVerificationUI(pair) {
+    const checking = pair.exact_status === "pending" || pair.exact_status === "checking";
+
+    if (pair.sha_verified) {
+        matchBadge.textContent = "EXACT MATCH";
+        matchBadge.className = "match-badge exact";
+        matchSha.textContent = "SHA verified";
+        matchSha.style.color = "var(--green)";
+    } else if (pair.match_type === "weak") {
+        matchBadge.textContent = "NEEDS REVIEW";
+        matchBadge.className = "match-badge weak";
+        matchSha.textContent = checking ? "Checking exact match…" : `Score: ${pair.match_score}`;
+        matchSha.style.color = "var(--text-muted)";
+    } else {
+        matchBadge.textContent = `${pair.match_type.toUpperCase()} MATCH`;
+        matchBadge.className = `match-badge ${pair.match_type}`;
+        matchSha.textContent = checking ? "Checking exact match…" : `Score: ${pair.match_score}`;
+        matchSha.style.color = checking ? "var(--text-muted)" : pair.match_score >= 5 ? "var(--yellow)" : "var(--red)";
+    }
+
+    matchReasons.textContent = pair.reasons.join(" + ");
+
+    const recommendation = getRecommendation(pair);
+    window.currentRecommendation = recommendation.decision;
+    recommendationText.textContent = checking
+        ? "Exact match check runs while you review this pair."
+        : recommendation.text;
+    recommendationPanel.className = `recommendation-panel ${checking ? "neutral" : recommendation.tone}`;
+    keepBtn.classList.toggle("recommended", !checking && recommendation.decision === "keep");
+    skipBtn.classList.toggle("recommended", checking || recommendation.decision === "skip");
+    deleteBtn.classList.toggle("recommended", !checking && recommendation.decision === "delete");
+}
+
+function verifyPairOnOpen(pair) {
+    if (pair.exact_status !== "pending" || verifyingPairs.has(pair.originalIndex)) return;
+
+    const index = pair.originalIndex;
+    verifyingPairs.add(index);
+    pair.exact_status = "checking";
+    updatePairVerificationUI(pair);
+
+    fetch(`/verify/${index}`, { method: "POST" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status !== "ok") throw new Error(data.message || "Verification failed");
+            Object.assign(pair, data.item);
+            pair.originalIndex = index;
+            const exactCount = duplicates.filter(item => item.sha_verified).length;
+            animateNumber(resultExact, exactCount, 240);
+            const headerStat = headerStats?.querySelectorAll(".header-stat")[3];
+            if (headerStat) {
+                headerStat.innerHTML = `<div class="dot dot-exact"></div>Exact: ${numberWithCommas(exactCount)}`;
+            }
+            renderGrid();
+            if (visibleDuplicates[currentIndex]?.originalIndex === index) {
+                updatePairVerificationUI(pair);
+                renderMeta(metaA, pair.accountA, pair.accountB);
+                renderMeta(metaB, pair.accountB, pair.accountA);
+            }
+        })
+        .catch(error => {
+            pair.exact_status = "pending";
+            console.error(error);
+            if (visibleDuplicates[currentIndex]?.originalIndex === index) {
+                updatePairVerificationUI(pair);
+            }
+        })
+        .finally(() => verifyingPairs.delete(index));
+}
+
 function showDuplicate(index) {
 
     if (visibleDuplicates.length === 0) {
@@ -1221,21 +1293,7 @@ function showDuplicate(index) {
     // Counter
     reviewCounter.textContent = `${currentIndex + 1} of ${visibleDuplicates.length}`;
 
-    // Match info
-    if (pair.sha_verified) {
-        matchBadge.textContent = "EXACT MATCH";
-        matchBadge.className = "match-badge exact";
-    } else if (pair.match_type === "weak") {
-        matchBadge.textContent = "NEEDS REVIEW";
-        matchBadge.className = "match-badge weak";
-    } else {
-        matchBadge.textContent = `${pair.match_type.toUpperCase()} MATCH`;
-        matchBadge.className = `match-badge ${pair.match_type}`;
-    }
-    matchReasons.textContent = pair.reasons.join(" + ");
-
-    matchSha.textContent = pair.sha_verified ? "SHA verified" : `Score: ${pair.match_score}`;
-    matchSha.style.color = pair.sha_verified ? "var(--green)" : pair.match_score >= 5 ? "var(--yellow)" : "var(--red)";
+    updatePairVerificationUI(pair);
 
     // Media
     if (mediaLoadTimeout) clearTimeout(mediaLoadTimeout);
@@ -1261,15 +1319,8 @@ function showDuplicate(index) {
     skipBtn.classList.toggle("selected", decision === "skip");
     deleteBtn.classList.toggle("selected", decision === "delete");
 
-    const recommendation = getRecommendation(pair);
-    window.currentRecommendation = recommendation.decision;
-    recommendationText.textContent = recommendation.text;
-    recommendationPanel.className = `recommendation-panel ${recommendation.tone}`;
-    keepBtn.classList.toggle("recommended", recommendation.decision === "keep");
-    skipBtn.classList.toggle("recommended", recommendation.decision === "skip");
-    deleteBtn.classList.toggle("recommended", recommendation.decision === "delete");
-
     drawProgressCanvas();
+    verifyPairOnOpen(pair);
 }
 
 function loadMedia(container, account, item) {
