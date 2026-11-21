@@ -29,6 +29,9 @@ const reviewSection = document.getElementById("reviewSection");
 const scanSection = document.getElementById("scanSection");
 const headerStats = document.getElementById("headerStats");
 const verificationStatus = document.getElementById("verificationStatus");
+const verificationCount = document.getElementById("verificationCount");
+const verificationTotal = document.getElementById("verificationTotal");
+const verificationMeterFill = document.getElementById("verificationMeterFill");
 const reviewCounterWrap = document.getElementById("reviewCounterWrap");
 const reviewCounter = document.getElementById("reviewCounter");
 const reviewJumpInput = document.getElementById("reviewJumpInput");
@@ -354,6 +357,7 @@ function handleProgress(data) {
         const total = data.total || 0;
         const verified = data.verified || 0;
         const pct = total > 0 ? Math.round((verified / total) * 100) : 0;
+        updateVerificationCounter(verified, total);
         progressTitle.textContent = "Verifying exact matches...";
         progressBadge.textContent = "VERIFYING";
         progressBar.classList.remove("indeterminate");
@@ -385,6 +389,7 @@ function handleProgress(data) {
         const statsA = data.stats_a;
         const statsB = data.stats_b;
         const total = data.total_candidates;
+        updateVerificationCounter(0, total);
 
         resultsSummary.classList.remove("hidden");
 
@@ -415,6 +420,7 @@ function handleProgress(data) {
 
     } else if (stage === "verification_complete") {
 
+        updateVerificationCounter(data.total || 0, data.total || 0);
         animateNumber(resultExact, data.exact || 0, 180);
         const exactStat = headerStats?.querySelectorAll(".header-stat")[3];
         if (exactStat) exactStat.innerHTML = `<div class="dot dot-exact"></div>Exact: ${numberWithCommas(data.exact || 0)}`;
@@ -461,6 +467,14 @@ function setStageActive(id) {
 function setStageCompleted(id) {
     document.getElementById(id).classList.remove("active");
     document.getElementById(id).classList.add("completed");
+}
+
+function updateVerificationCounter(verified, total) {
+    const count = Math.max(0, Number(total) || 0);
+    const checked = Math.max(0, Math.min(Number(verified) || 0, count));
+    if (verificationCount) verificationCount.textContent = numberWithCommas(checked);
+    if (verificationTotal) verificationTotal.textContent = numberWithCommas(count);
+    if (verificationMeterFill) verificationMeterFill.style.width = `${count ? (checked / count) * 100 : 0}%`;
 }
 
 
@@ -1272,6 +1286,8 @@ function verifyPairOnOpen(pair) {
             if (data.status !== "ok") throw new Error(data.message || "Verification failed");
             Object.assign(pair, data.item);
             pair.originalIndex = index;
+            const checkedCount = duplicates.filter(item => item.exact_status !== "checking").length;
+            updateVerificationCounter(checkedCount, duplicates.length);
             const exactCount = duplicates.filter(item => item.sha_verified).length;
             animateNumber(resultExact, exactCount, 240);
             const headerStat = headerStats?.querySelectorAll(".header-stat")[3];

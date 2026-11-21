@@ -2075,6 +2075,10 @@ body::before { content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
 .review-heading h2 { font-size:clamp(34px,4vw,48px);margin:11px 0; }
 .review-heading h2 em { color:var(--accent);font-weight:400; }
 .review-header { display:flex;align-items:center;gap:18px;padding:16px 0; }
+.verification-meter { flex:0 1 190px; min-width:150px; color:var(--text-muted); font-size:12px; white-space:nowrap; }
+.verification-meter strong { color:var(--text-primary); font-size:14px; font-variant-numeric:tabular-nums; }
+.verification-meter-track { height:4px; margin-top:6px; overflow:hidden; border-radius:4px; background:var(--border); }
+.verification-meter-track span { display:block; width:0; height:100%; border-radius:inherit; background:var(--green); transition:width .25s ease; }
 .review-nav { display:flex;align-items:center;gap:7px;flex-shrink:0; }
 .review-counter-wrap { min-width:94px;text-align:center;color:var(--text-secondary);font:11px var(--mono); }
 .review-progress-bar { flex:1;height:5px;border-radius:6px;overflow:hidden;background:var(--bg-elevated); }
