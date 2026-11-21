@@ -294,10 +294,10 @@ def verify_candidates(candidates, root, progress_callback=None, keep_all=False):
                         "current": current_name
                     })
 
-    _save_verify_cache(root, current_cache)
-
         # Cleanup handles in all worker threads
-        list(executor.map(lambda _: _close_thread_handles(), range(workers)))
+        list(executor.map(lambda _: _close_thread_handles(), range(min(workers, len(pending)) or 1)))
+
+    _save_verify_cache(root, current_cache)
 
     if progress_callback:
         progress_callback({
