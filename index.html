@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Duplicate Cleaner — Private library review</title>
+    <meta name="description" content="Compare Google Photos Takeout archives, review duplicate matches, and safely extract your choices.">
+    <meta name="theme-color" content="#f7f4ec">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230b6b5f%22/><path d=%22M26 70V30h12l12 18 12-18h12v40H61V49L50 65 39 49v21z%22 fill=%22%23f7f4ec%22/></svg>">
+    <link rel="stylesheet" href="/static/style.css?v=18">
+</head>
+<body>
+<a class="skip-link" href="#app-main">Skip to content</a>
+
+<!-- ─── Header ──────────────────────────────────────── -->
+<header id="app-header">
+    <div class="header-content">
+        <div class="logo">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </span>
+            <span class="brand-copy"><strong>Photo Duplicate Cleaner</strong><small>PRIVATE LIBRARY REVIEW</small></span>
+        </div>
+        <nav class="site-nav" aria-label="Main navigation">
+            <a href="#app-main" class="site-nav-link" aria-current="page"><span class="nav-index">01</span>Workspace</a>
+            <a href="#reviewSection" class="site-nav-link"><span class="nav-index">02</span>Review</a>
+            <a href="#footerSafety" class="site-nav-link"><span class="nav-index">03</span>Safety</a>
+        </nav>
+        <div class="header-tools">
+            <div class="header-stats" id="headerStats"></div>
+            <button class="theme-toggle" id="themeToggleBtn" type="button" title="Switch to dark theme" aria-label="Switch to dark theme">
+                <span class="theme-icon-well" aria-hidden="true">
+                    <svg class="theme-icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+                    <svg class="theme-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 15.3A8.5 8.5 0 0 1 8.7 3.6 8.7 8.7 0 1 0 20.4 15.3Z"/><path d="m16.8 4 .5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5.5-1.3Z"/></svg>
+                </span>
+                <span class="theme-label">Light</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ─── Main Container ──────────────────────────────── -->
+<main id="app-main">
+
+    <!-- ─── Scan Section ────────────────────────────── -->
+    <section class="scan-section" id="scanSection">
+
+        <div class="home-hero">
+            <div class="hero-copy">
+                <div class="eyebrow"><span class="eyebrow-mark"></span> A PRIVATE PHOTO WORKSPACE</div>
+                <h2>Keep the moments.<br><em>Lose the repeats.</em></h2>
+                <p class="scan-desc">Compare two Google Photos Takeouts side by side. Confirm every match, then gather your choices safely in one place.</p>
+                <div class="hero-actions">
+                    <button id="scanBtn" class="btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5M8 11h5M10.5 8.5v5"/></svg>
+                        <span>Compare libraries</span><span class="button-arrow">↗</span>
+                    </button>
+                    <span class="hero-shortcut">No uploads · Originals stay put</span>
+                </div>
+            </div>
+
+            <div class="source-stage" aria-label="Two local Google Photos Takeout folders">
+                <div class="stage-topline"><span>YOUR ARCHIVES</span><span class="stage-live"><i></i> LOCAL ONLY</span></div>
+                <div class="source-pair">
+                    <article class="source-card source-card-a">
+                        <div class="source-card-top"><span class="source-index">01</span><span class="source-symbol">A</span></div>
+                        <div class="source-glyph" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                        <div class="source-card-bottom"><strong>Account A</strong><span id="sourceAStatus">Checking folder…</span></div>
+                        <div class="source-card-count"><b id="sourceAZips">—</b><span>archives</span><small id="sourceASize">ZIP files</small></div>
+                    </article>
+                    <div class="source-bridge" aria-hidden="true"><span>COMPARE</span><i>↔</i><span>PRIVATE</span></div>
+                    <article class="source-card source-card-b">
+                        <div class="source-card-top"><span class="source-index">02</span><span class="source-symbol">B</span></div>
+                        <div class="source-glyph" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                        <div class="source-card-bottom"><strong>Account B</strong><span id="sourceBStatus">Checking folder…</span></div>
+                        <div class="source-card-count"><b id="sourceBZips">—</b><span>archives</span><small id="sourceBSize">ZIP files</small></div>
+                    </article>
+                </div>
+                <div class="stage-footline"><span>01 / 02</span><span>COMPARE TWO TAKEOUT EXPORTS</span><span>02 / 02</span></div>
+            </div>
+        </div>
+
+        <!-- ─── History Panel ───────────────────────── -->
+        <div class="history-panel hidden" id="historyPanel">
+            <h3>Recent reviews</h3>
+            <div id="historyList" class="history-list"></div>
+        </div>
+
+        <!-- ─── Progress Panel ──────────────────────── -->
+        <div class="progress-panel hidden" id="progressPanel">
+
+            <div class="progress-header">
+                <div class="progress-heading"><span class="eyebrow">LIVE SCAN</span><h3 id="progressTitle">Preparing your libraries…</h3></div>
+                <div class="progress-state"><span class="scan-pulse"></span><span class="progress-badge" id="progressBadge">SCANNING</span><span class="scan-elapsed" id="scanElapsed">00:00</span></div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="progress-details" id="progressDetails">
+                <div class="detail-row detail-current">
+                    <span class="detail-label" id="labelCurrentItem">Current ZIP</span>
+                    <span class="detail-value" id="currentZip">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label" id="labelProgressItem">Archive progress</span>
+                    <span class="detail-value" id="zipProgress">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Photos indexed</span>
+                    <span class="detail-value" id="photosFound">0</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Videos indexed</span>
+                    <span class="detail-value" id="videosFound">0</span>
+                </div>
+            </div>
+
+            <!-- Stage indicators -->
+            <div class="stages" id="stageIndicators">
+                <div class="stage active" id="stageScanA">
+                    <div class="stage-dot"></div>
+                    <span>Read account A</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" id="stageScanB">
+                    <div class="stage-dot"></div>
+                    <span>Read account B</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" id="stageCompare">
+                    <div class="stage-dot"></div>
+                    <span>Find matches</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" id="stageDone">
+                    <div class="stage-dot"></div>
+                    <span>Verify copies</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Results Summary ─────────────────────── -->
+        <div class="results-summary hidden" id="resultsSummary">
+
+            <div class="results-heading"><span class="eyebrow">SCAN COMPLETE</span><h2>Your libraries, <em>mapped.</em></h2><p>We found these files and candidate matches. Review each pair before choosing what to extract.</p></div>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="result-number" id="resultAccountA">0</div>
+                    <div class="result-label">Account A files</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number" id="resultAccountB">0</div>
+                    <div class="result-label">Account B files</div>
+                </div>
+                <div class="result-card highlight">
+                    <div class="result-number" id="resultVerified">0</div>
+                    <div class="result-label">Verified candidates</div>
+                </div>
+                <div class="result-card result-exact">
+                    <div class="result-number" id="resultExact">0</div>
+                    <div class="result-label">Exact copies</div>
+                </div>
+            </div>
+
+            <div class="result-confidence" aria-label="Candidate confidence counts">
+                <span><i class="confidence-dot confidence-strong"></i><b id="resultStrong">0</b> strong</span>
+                <span><i class="confidence-dot confidence-likely"></i><b id="resultLikely">0</b> likely</span>
+                <span><i class="confidence-dot confidence-review"></i><b id="resultWeak">0</b> need a closer look</span>
+            </div>
+
+            <button id="reviewBtn" class="btn-primary" style="margin-top: 20px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Review matches <span class="button-arrow">↗</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ─── Review Section ──────────────────────────── -->
+    <section class="review-section hidden" id="reviewSection">
+
+        <div class="review-heading">
+            <span class="eyebrow">THE REVIEW ROOM</span>
+            <h2>One pair at a time.<br><em>Nothing gets guessed.</em></h2>
+            <p>Compare the files, see why they matched, and mark only the copies you want to gather.</p>
+        </div>
+
+        <!-- Review header -->
+        <div class="review-header">
+            <div class="review-nav">
+                <button class="btn-icon" id="prevBtn" title="Shortcut: Up Arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <div id="reviewCounterWrap" class="review-counter-wrap" title="Click to jump to a specific photo">
+                    <span class="review-counter" id="reviewCounter">1 of 0</span>
+                    <input type="number" id="reviewJumpInput" class="hidden review-jump-input" min="1">
+                </div>
+                <button class="btn-icon" id="nextBtn" title="Shortcut: Down Arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <button class="btn-icon" id="undoBtn" title="Undo Last Decision (Ctrl+Z or Backspace)" disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="review-progress-bar">
+                <canvas id="reviewProgressCanvas" width="1200" height="8" style="width: 100%; height: 100%; display: block;"></canvas>
+            </div>
+
+        <div class="review-actions-top">
+                <button class="btn-secondary btn-bulk-exact" id="bulkResolveBtn" title="Mark exact copies for extraction from Account A">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    Mark exact copies
+                </button>
+                <div style="width: 1px; height: 20px; background: var(--border-light); margin: 0 4px;"></div>
+                <button class="btn-finalize" id="finalizeBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Review summary <span class="button-arrow">↗</span>
+                </button>
+                <button class="btn-secondary" id="backToScanBtn">Scan overview</button>
+            </div>
+        </div>
+
+
+        <div class="review-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Filter</span>
+                <select id="reviewFilter" class="toolbar-select">
+                    <option value="all">All matches</option>
+                    <option value="exact">Exact only</option>
+                    <option value="likely">Likely only</option>
+                    <option value="needs_review">Needs review</option>
+                    <option value="photos">Photos</option>
+                    <option value="videos">Videos</option>
+                    <option value="unreviewed">Unreviewed</option>
+                    <option value="delete">Marked delete</option>
+                </select>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-label">Year</span>
+                <select id="yearFilter" class="toolbar-select">
+                    <option value="all">All years</option>
+                </select>
+            </div>
+            <label class="toolbar-group duplicate-search">
+                <span class="toolbar-label">Find a file</span>
+                <input id="duplicateSearch" class="toolbar-select" type="search" placeholder="Search filenames or albums" autocomplete="off">
+            </label>
+            <label class="toolbar-group">
+                <span class="toolbar-label">Sort by</span>
+                <select id="duplicateSort" class="toolbar-select">
+                    <option value="confidence">Best match</option>
+                    <option value="name">Filename</option>
+                    <option value="largest">Largest file first</option>
+                    <option value="year">Newest year</option>
+                </select>
+            </label>
+            <div class="toolbar-group">
+                <span class="toolbar-label">Mode</span>
+                <div class="segmented">
+                    <button type="button" class="segment active" data-mode="careful">Careful</button>
+                    <button type="button" class="segment" data-mode="fast">Fast</button>
+                    <button type="button" class="segment" data-mode="exact">Exact</button>
+                </div>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-label">View</span>
+                <div class="segmented" id="viewModeToggle">
+                    <button type="button" class="segment active" data-view="single">Single</button>
+                    <button type="button" class="segment" data-view="grid">Grid</button>
+                </div>
+            </div>
+            <button class="btn-secondary" id="nextUnreviewedBtn">Next unreviewed <span aria-hidden="true">↓</span></button>
+            <span class="filter-results-count" id="filterResultsCount" aria-live="polite">0 matches</span>
+        </div>
+
+
+        <!-- Single View Container -->
+        <div id="singleViewWrap">
+            <!-- Match info badge & comparison mode switcher -->
+            <div class="match-info" id="matchInfo">
+                <span class="match-badge strong" id="matchBadge">STRONG</span>
+                <span class="match-reasons" id="matchReasons">time + name + size</span>
+                <span class="match-sha" id="matchSha">SHA ✓</span>
+                <div class="segmented" id="compareModeToggle" style="margin-left: auto;">
+                    <button type="button" class="segment active" data-compare="side">Side-by-Side</button>
+                    <button type="button" class="segment" data-compare="slider" title="Drag to compare (Shortcut: S)">Curtain Slider</button>
+                </div>
+            </div>
+
+            <div class="recommendation-panel" id="recommendationPanel">
+                <span class="recommendation-label">Recommendation</span>
+                <strong id="recommendationText">Review manually</strong>
+            </div>
+
+            <!-- Side-by-side comparison -->
+            <div class="comparison" id="comparison">
+
+                <div class="compare-card" id="cardA">
+                    <div class="compare-label"><span class="compare-account"><i class="account-mark account-mark-a">A</i><span>Account A</span></span><span class="compare-side-note">ORIGINAL SIDE</span></div>
+                    <div class="compare-media" id="mediaA">
+                        <div class="media-placeholder">No preview</div>
+                    </div>
+                    <div class="compare-meta" id="metaA"></div>
+                </div>
+
+                <div class="compare-vs">VS</div>
+
+                <div class="compare-card" id="cardB">
+                    <div class="compare-label"><span class="compare-account"><i class="account-mark account-mark-b">B</i><span>Account B</span></span><span class="compare-side-note">MATCHING SIDE</span></div>
+                    <div class="compare-media" id="mediaB">
+                        <div class="media-placeholder">No preview</div>
+                    </div>
+                    <div class="compare-meta" id="metaB"></div>
+                </div>
+
+            </div>
+
+            <!-- Split Curtain Slider View -->
+            <div class="slider-comparison-wrap hidden" id="sliderComparisonWrap">
+                <div class="slider-instructions">Drag the divider left or right to inspect Account A (Left) and Account B (Right)</div>
+                <div class="slider-viewport" id="sliderViewport">
+                    <div class="slider-media-base" id="sliderMediaB"></div>
+                    <div class="slider-media-overlay" id="sliderMediaA"></div>
+                    <div class="slider-divider" id="sliderDivider" style="left: 50%;">
+                        <div class="slider-handle-thumb">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
+                    </div>
+                    <span class="slider-tag left">Account A</span>
+                    <span class="slider-tag right">Account B</span>
+                </div>
+            </div>
+
+            <!-- Running Stats Tracker -->
+            <div class="review-running-stats" id="runningStats" style="justify-content: center; margin-top: 10px; margin-bottom: 12px;">
+                <span class="run-stat keep">Keep: <strong id="runKeep">0</strong></span>
+                <span class="run-stat skip">Skip: <strong id="runSkip">0</strong></span>
+                <span class="run-stat delete">Delete A: <strong id="runDelete">0</strong></span>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="review-actions" id="reviewActions">
+                <button class="btn-keep" id="keepBtn" title="Shortcut: Left Arrow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Keep A <span class="shortcut">[ ← ]</span>
+                </button>
+                <button class="btn-skip" id="skipBtn" title="Shortcut: Spacebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                    Skip <span class="shortcut">[ SPC ]</span>
+                </button>
+                <button class="btn-delete" id="deleteBtn" title="Shortcut: Right Arrow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Extract A copy <span class="shortcut">[ → ]</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid View Container -->
+        <div id="gridViewWrap" class="hidden">
+            <div class="grid-toolbar">
+                <div class="grid-toolbar-left">
+                    <label class="grid-select-all-label">
+                        <input type="checkbox" id="gridSelectAllOnPage">
+                        <span>Select Page</span>
+                    </label>
+                    <span class="grid-selection-count" id="gridSelectionCount">0 selected</span>
+                </div>
+                <div class="grid-toolbar-actions">
+                    <button class="btn-sm btn-delete-selected" id="gridDeleteSelectedBtn" disabled>
+                        Extract A copies
+                    </button>
+                    <button class="btn-sm btn-keep-selected" id="gridKeepSelectedBtn" disabled>
+                        Keep Selected
+                    </button>
+                    <button class="btn-sm btn-bulk-page" id="gridDeleteExactOnPageBtn">
+                        Mark exact copies
+                    </button>
+                </div>
+                <div class="grid-toolbar-pagination">
+                    <button class="btn-icon" id="gridPrevPageBtn" title="Previous Page">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span id="gridPageIndicator" class="grid-page-indicator">Page 1 of 1</span>
+                    <button class="btn-icon" id="gridNextPageBtn" title="Next Page">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="duplicates-grid" id="duplicatesGrid"></div>
+
+            <div class="grid-bottom-pagination">
+                <button class="btn-secondary" id="gridPrevPageBottomBtn">Previous Page</button>
+                <span id="gridPageIndicatorBottom" class="grid-page-indicator">Page 1 of 1</span>
+                <button class="btn-secondary" id="gridNextPageBottomBtn">Next Page</button>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ─── Finalize Section ────────────────────────── -->
+    <section class="finalize-section hidden" id="finalizeSection">
+
+        <div class="finalize-card">
+            <div class="finalize-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </div>
+
+            <h2>Review complete</h2>
+            <p class="finalize-desc" id="finalizeDesc">Summary of your decisions</p>
+
+            <div class="finalize-stats" id="finalizeStats">
+                <div class="finalize-stat">
+                    <span class="finalize-stat-number" id="statKeep">0</span>
+                    <span class="finalize-stat-label">Keep</span>
+                </div>
+                <div class="finalize-stat delete">
+                    <span class="finalize-stat-number" id="statDelete">0</span>
+                    <span class="finalize-stat-label">Marked to extract</span>
+                </div>
+                <div class="finalize-stat">
+                    <span class="finalize-stat-number" id="statSkip">0</span>
+                    <span class="finalize-stat-label">Skipped</span>
+                </div>
+                <div class="finalize-stat">
+                    <span class="finalize-stat-number" id="statUnreviewed">0</span>
+                    <span class="finalize-stat-label">Unreviewed</span>
+                </div>
+            </div>
+
+            <div class="finalize-warning" id="finalizeWarning">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>This copies <strong id="deleteCount">0</strong> Account A files into <code>to_delete/</code> and writes a CSV report. Your original Takeout archives are never changed.</span>
+            </div>
+
+            <div class="finalize-preview" id="finalizePreview">
+                <div class="finalize-preview-header">
+                    <strong>Files to extract</strong>
+                    <span id="finalizePreviewCount">0 items</span>
+                </div>
+                <div class="finalize-preview-list" id="finalizePreviewList"></div>
+            </div>
+
+            <div class="finalize-buttons">
+                <button class="btn-primary btn-confirm-delete" id="confirmFinalizeBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Extract selected copies
+                </button>
+                <button class="btn-secondary" id="backToReviewBtn">Back to Review</button>
+            </div>
+
+            <div class="finalize-result hidden" id="finalizeResult">
+                <div class="finalize-result-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <p id="finalizeResultText">Done!</p>
+                
+                <button class="btn-secondary" id="openFolderBtn" style="margin-top: 16px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    Open Extraction Folder
+                </button>
+            </div>
+        </div>
+
+    </section>
+
+</main>
+
+<!-- ─── Toast Notification ──────────────────────────── -->
+<footer class="site-footer" id="siteFooter">
+    <div class="footer-inner">
+        <div class="footer-identity">
+            <span class="footer-monogram" aria-hidden="true">AB</span>
+            <div><strong>Built by ABu</strong><span>Private photo library review</span></div>
+        </div>
+        <p class="footer-safety" id="footerSafety">Your Takeout archives stay local. Chosen Account A files are copied to <code>to_delete/</code>; originals are never changed.</p>
+        <div class="footer-links">
+            <span>© <span id="footerYear">2026</span> ABu. All rights reserved.</span>
+            <a href="https://abufolio.vercel.app" target="_blank" rel="noopener noreferrer">More of my work <span aria-hidden="true">↗</span></a>
+        </div>
+    </div>
+</footer>
+
+<div class="toast hidden" id="toast"></div>
+
+    <script src="/static/app.js?v=17"></script>
+</body>
+</html>
